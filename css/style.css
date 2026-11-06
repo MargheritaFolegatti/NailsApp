@@ -358,6 +358,9 @@ html.is-locked, body.is-locked { background: var(--dark); }
   font-size: .85rem; font-weight: 600;
 }
 .lock__demo strong { font-weight: 800; letter-spacing: .08em; }
+/* Dentro il telefono di index.html il PIN è già scritto nella descrizione
+   accanto: qui non si ripete. Aperta da sola (sul cellulare) l'avviso resta. */
+.in-demo-phone .lock__demo { display: none; }
 .lock form { display: grid; gap: 1.1rem; }
 .lock__err { color: #E8A79E; font-size: .85rem; font-weight: 600; margin-top: -.4rem; }
 
