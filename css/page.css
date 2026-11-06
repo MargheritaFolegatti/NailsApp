@@ -1,0 +1,167 @@
+/* ==========================================================================
+   NailsApp — pagina della demo (desktop): testo a sinistra, telefono a destra.
+   Stessa impostazione di SwapSkills. L'app vera sta in app.html, dentro
+   il telefono; i suoi stili sono in style.css e qui non si toccano.
+   ========================================================================== */
+
+:root {
+  --page-bg: #F6EFEB;
+  --page-ink: #1C1917;
+  --page-muted: #7A706B;
+  --rose: #E5BDB3;
+  --rose-deep: #B9796A;
+  --dark: #1C1917;
+  --app-bg: #F6EFEB;
+
+  font-family: "Manrope", system-ui, sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+html, body { margin: 0; height: 100%; }
+
+body {
+  background: var(--page-bg);
+  color: var(--page-ink);
+  -webkit-font-smoothing: antialiased;
+}
+
+.stage {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(40px, 7vw, 120px);
+  padding: 24px;
+  background:
+    radial-gradient(60% 70% at 72% 50%, rgba(229, 189, 179, .75), transparent 70%),
+    var(--page-bg);
+}
+
+.intro { max-width: 400px; }
+
+.brand { display: flex; align-items: center; gap: 14px; }
+.brand__icon { width: 56px; height: 56px; border-radius: 15px; box-shadow: 0 10px 24px -12px rgba(28, 25, 23, .45); }
+.brand__name { font-size: 22px; font-weight: 800; letter-spacing: -.02em; }
+
+.intro h1 {
+  font-size: clamp(30px, 3.2vw, 42px);
+  line-height: 1.08;
+  letter-spacing: -.025em;
+  font-weight: 800;
+  margin: 36px 0 20px;
+}
+.intro p { color: var(--page-muted); line-height: 1.65; margin: 0 0 14px; font-size: 16px; }
+.intro .intro__pin { color: var(--page-ink); font-weight: 600; }
+.intro__pin strong {
+  display: inline-block; padding: 2px 10px; margin-left: 2px;
+  border-radius: 999px; background: var(--rose); letter-spacing: .08em;
+}
+
+/* --------------------------------------------------------------------------
+   Telefono: iPhone 17. Schermo 402×874 punti, come il vero; la cornice
+   aggiunge 12px per lato (426×898). Su schermi bassi lo rimpicciolisce
+   fitPhone() in index.html, senza cambiare le misure interne.
+
+   L'app occupa tutto lo schermo, sotto Dynamic Island e barra Home, e
+   si scansa da sola come sul telefono: index.html le passa le zone
+   sicure dell'iPhone 17 (--safe-top 62px, --safe-bottom 34px), che
+   style.css usa al posto di env(safe-area-inset-*).
+   -------------------------------------------------------------------------- */
+
+.phone {
+  --bezel: 12px;
+  position: relative;
+  flex: none;
+  width: 426px;
+  height: 898px;
+  background: var(--app-bg);
+  border-radius: 68px;
+  border: var(--bezel) solid #121212;
+  box-shadow:
+    0 0 0 2px #4a4a4c,                     /* bordo in alluminio */
+    0 0 0 3px #1d1d1f,
+    0 60px 100px -34px rgba(90, 40, 30, .5);
+  overflow: hidden;
+  isolation: isolate;
+  color: var(--page-ink);
+  transition: background-color .2s, color .2s;
+}
+.phone.is-dark { background: var(--dark); color: #fff; }
+
+/* Dynamic Island: 126×37, a 11pt dal bordo alto dello schermo. */
+.phone-notch {
+  position: absolute;
+  top: 11px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 126px;
+  height: 37px;
+  border-radius: 20px;
+  background: #000;
+  z-index: 30;
+  pointer-events: none;
+}
+
+/* Barra di stato: ora a sinistra e icone a destra, ai lati dell'isola. */
+.statusbar {
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 59px;
+  padding: 0 34px 0 50px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: -.01em;
+  z-index: 25;
+  pointer-events: none;
+}
+.statusbar .time { min-width: 54px; text-align: center; }
+.statusbar svg { height: 12px; width: auto; }
+.statusbar .icons { display: flex; gap: 6px; align-items: center; }
+
+/* Barra Home: 139×5, a 8pt dal fondo. */
+.home-indicator {
+  position: absolute;
+  left: 50%;
+  bottom: 8px;
+  transform: translateX(-50%);
+  width: 139px;
+  height: 5px;
+  border-radius: 3px;
+  background: currentColor;
+  z-index: 25;
+  pointer-events: none;
+}
+
+/* Lo schermo dell'app: tutto il vetro, angoli compresi. */
+.phone__screen {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  border-radius: 56px;
+  display: block;
+  background: transparent;
+}
+
+/* Finestra stretta (il reindirizzamento ad app.html scatta solo
+   all'apertura): l'app occupa tutto lo schermo, come in SwapSkills. */
+@media (max-width: 560px) {
+  .stage { padding: 0; display: block; }
+  .intro { display: none; }
+  .phone {
+    width: 100%;
+    height: 100vh;
+    height: 100dvh;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    zoom: 1 !important;
+  }
+  .phone-notch, .statusbar, .home-indicator { display: none; }
+  .phone__screen { border-radius: 0; }
+}

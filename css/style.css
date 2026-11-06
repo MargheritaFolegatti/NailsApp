@@ -1,0 +1,1914 @@
+/* ============================================================
+   GESTIONALE PRIVATO — style.css
+   App locale protetta da PIN. Nessuna pagina pubblica.
+   ------------------------------------------------------------
+   MOBILE-FIRST: lo stile base (senza media query) è quello del
+   telefono. Le larghezze maggiori aggiungono, non correggono.
+
+   Impianto visivo: fondo cipria, schede bianche, un solo blocco
+   quasi nero per il dato che conta, rosa cipria per l'azione
+   principale. Un carattere solo (Manrope), differenze fatte col
+   peso e non con la famiglia. Molta aria: ogni schermata dice
+   una cosa, il resto sta dietro un tocco.
+
+   Tema unico e voluto: l'app vive in un mondo chiaro e caldo.
+   Non segue quindi il tema del sistema, ma dipinge sempre in
+   modo esplicito fondo e colori, così non eredita niente.
+
+   Scaglioni:
+     xs   fino a 359px   telefoni piccoli
+     sm   360–599px      telefoni standard  ← caso d'uso principale
+     md   600–899px      telefoni in orizzontale, tablet piccoli
+     lg   da 900px       tablet in orizzontale, desktop
+   ------------------------------------------------------------
+   INDICE
+   01. Token
+   02. Reset e base
+   03. Utility
+   04. Bottoni e comandi
+   05. Schermata di accesso
+   06. Shell, schede, navigazione
+   07. Home (saluto)
+   08. Righe di elenco
+   09. Agenda (calendario)
+   10. Clienti (ricerca)
+   11. Conti (grafico, tabella)
+   12. Impostazioni (menu)
+   13. Pannelli (sheet) e form
+   14. Toast
+   15. Media queries
+   16. Preferenze utente
+   17. Resoconto (anteprima e stampa)
+   ============================================================ */
+
+/* ============================================================
+   01. TOKEN
+   ============================================================ */
+:root {
+  /* Fondo e superfici — neutri caldi, tirati verso il cipria:
+     un grigio puro qui stonerebbe contro il rosa. */
+  --bg:        #F6EFEB;
+  --surface:   #FFFFFF;
+  --surface-2: #FAF4F1;   /* campi, incassi dentro le schede */
+  --line:      #EFE5E0;
+
+  /* Testo */
+  --ink:   #1C1917;       /* quasi nero, leggermente caldo */
+  --ink-2: #8A817C;
+  --ink-3: #B5ACA6;
+
+  /* Accento */
+  --rose:      #E5BDB3;
+  --rose-soft: #F5E2DB;
+  --rose-deep: #B9796A;   /* per il testo: il cipria pieno non ha contrasto */
+
+  /* Blocchi scuri */
+  --dark:    #1C1917;
+  --dark-2:  #2A2622;     /* scheda dentro la scheda scura */
+  --on-dark:      #FFFFFF;
+  --on-dark-soft: #A69C96;
+
+  /* Stato — semantici, tenuti separati dall'accento */
+  --wait:    #B0762F;  --wait-bg: #FAF0DF;
+  --conf:    #4E8271;  --conf-bg: #E6F1EC;
+  --done:    #9A928D;  --done-bg: #F1EDEB;
+  --danger:  #B4544A;  --danger-bg: #FBEBE9;
+
+  /* Il pallino dell'appuntamento dice una cosa sola: incassato o no.
+     Il colore non è l'unico segnale — l'etichetta al passaggio e la
+     posizione fissa nella riga dicono la stessa cosa. */
+  --st-todo: #C0524A;
+  --st-done: #3B8A5C;
+
+  /* Serie del grafico: distinguibili anche in daltonismo, e comunque
+     sempre accompagnate dalla tabella dei valori esatti. */
+  --series-in:  #1C1917;
+  --series-out: #DDA898;
+
+  /* Guadagni e spese: ognuno il suo colore, uguale in tutta la
+     sezione Conti — riquadro, elenco, pulsante, grafico. Presi dalla
+     palette dell'app, non dal semaforo: il quasi nero per quello che
+     entra, il cipria per quello che esce. A distinguerli aiutano
+     anche le frecce, su e giù. */
+  --in:      #1C1917;  --in-bg:  #EDE4DF;
+  --out:     #B9796A;  --out-bg: #F5E2DB;
+
+  --font: "Manrope", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+
+  --r-card: 22px;
+  --r-md:   16px;
+  --r-sm:   12px;
+  --r-pill: 999px;
+
+  --shadow-sm: 0 1px 2px rgba(28, 25, 23, .04);
+  --shadow:    0 6px 24px rgba(28, 25, 23, .06);
+  --shadow-dark: 0 14px 34px rgba(28, 25, 23, .22);
+
+  --tap: 48px;            /* bersaglio minimo per il dito */
+  --pad: 1.15rem;         /* margine laterale della pagina */
+  --navbar-h: 66px;
+  --ease: cubic-bezier(.32, .72, 0, 1);
+  --content: 460px;       /* colonna dell'app: resta a misura di telefono */
+}
+
+@media (max-width: 359px) { :root { --pad: .85rem; } }
+
+/* ============================================================
+   02. RESET E BASE
+   ============================================================ */
+*, *::before, *::after { box-sizing: border-box; }
+
+/*
+  Guscio a schermo fisso. Il documento non scorre: scorre solo la fascia
+  del contenuto, dentro .content. Serve perché la barra in basso deve
+  restare ferma sempre — con la pagina che scorre per intero, un elemento
+  fisso perde l'aggancio non appena il riquadro che ospita l'app è alto
+  quanto il contenuto invece che quanto lo schermo, e la barra se ne va
+  in alto insieme al resto. Con l'altezza al 100% l'app riempie ciò che
+  le viene dato, telefono o riquadro che sia.
+*/
+html { height: var(--app-h, 100%); -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  height: var(--app-h, 100%);
+  overflow: hidden;
+  font-family: var(--font);
+  font-size: 15px;
+  line-height: 1.55;
+  font-weight: 500;
+  color: var(--ink);
+  background: var(--bg);              /* esplicito: non eredita il fondo dell'host */
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+  position: relative;          /* aggancio per barra, pannelli e notifiche */
+  overflow-wrap: break-word;
+}
+/* Campi numerici (prezzo, importo, durata): solo il testo da scrivere,
+   senza le freccine su e giù accanto. */
+input[type="number"] { -moz-appearance: textfield; appearance: textfield; }
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+
+/* Niente barre di scorrimento: si scorre col dito come sempre, ma la
+   barra grigia di lato (sul computer, e nei pannelli) non compare. */
+* { scrollbar-width: none; }
+*::-webkit-scrollbar { display: none; width: 0; height: 0; }
+
+/* A pannello aperto anche la fascia del contenuto si ferma, altrimenti
+   la pagina continuerebbe a scorrere dietro sotto le dita. */
+body.is-sheet .content, body.is-locked .content { overflow: hidden; }
+
+h1, h2, h3 { margin: 0; font-weight: 700; line-height: 1.2; text-wrap: balance; }
+p { margin: 0; }
+ul, ol { margin: 0; padding: 0; list-style: none; }
+/* Il browser dà a <figure> un margine laterale di 40px: senza azzerarlo
+   la scheda del grafico risulterebbe rientrata rispetto a tutte le altre. */
+figure { margin: 0; }
+fieldset { margin: 0; padding: 0; border: 0; min-width: 0; }
+button { font: inherit; color: inherit; }
+img { max-width: 100%; display: block; }
+
+code {
+  font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
+  font-size: .88em;
+  background: var(--rose-soft);
+  color: var(--rose-deep);
+  padding: .1em .4em;
+  border-radius: 6px;
+}
+
+:focus-visible {
+  outline: 2px solid var(--rose-deep);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+/* Gli SVG dell'interfaccia sono tutti a tratto: stesso spessore
+   ovunque, così la fila di icone risulta omogenea. */
+svg { fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+
+/* ============================================================
+   03. UTILITY
+   ============================================================ */
+.sr-only {
+  position: absolute; width: 1px; height: 1px;
+  padding: 0; margin: -1px; overflow: hidden;
+  clip: rect(0 0 0 0); white-space: nowrap;
+}
+[hidden] { display: none !important; }
+
+.subtle { color: var(--ink-2); font-size: .875rem; }
+.fineprint { color: var(--ink-3); font-size: .78rem; line-height: 1.55; }
+
+.chev { width: 18px; height: 18px; color: var(--ink-3); flex: none; }
+
+.empty {
+  padding: 1.6rem 1rem;
+  text-align: center;
+  color: var(--ink-3);
+  font-size: .875rem;
+  background: var(--surface);
+  border-radius: var(--r-md);
+}
+
+/* Intestazione di blocco: titolo a sinistra, scorciatoia a destra. */
+.sectionhead {
+  display: flex; align-items: baseline; justify-content: space-between;
+  gap: .8rem;
+  margin: 1.6rem 0 .7rem;
+}
+.sectionhead h2 { font-size: 1.05rem; font-weight: 700; }
+/* Il primo blocco della schermata non ha niente sopra da cui staccarsi. */
+.sectionhead--first { margin-top: .4rem; }
+.sectionhead__note { font-size: .8rem; color: var(--ink-3); text-align: right; }
+
+.fieldlabel {
+  margin: 1.4rem 0 .5rem;
+  font-size: .7rem; font-weight: 700; letter-spacing: .1em;
+  text-transform: uppercase; color: var(--ink-3);
+}
+
+.card {
+  background: var(--surface);
+  border-radius: var(--r-card);
+  padding: 1.1rem;
+  box-shadow: var(--shadow-sm);
+}
+
+/* ============================================================
+   04. BOTTONI E COMANDI
+   ============================================================ */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: .5rem;
+  min-height: var(--tap);
+  padding: .8rem 1.4rem;
+  border: 0; border-radius: var(--r-pill);
+  font-size: .95rem; font-weight: 700;
+  cursor: pointer; text-align: center;
+  transition: transform .14s var(--ease), background-color .18s var(--ease), color .18s var(--ease);
+}
+.btn:active { transform: scale(.975); }
+.btn--block { width: 100%; }
+.btn--lg { min-height: 54px; font-size: 1rem; }
+.btn__plus { width: 19px; height: 19px; stroke-width: 2.2; }
+
+.btn--dark  { background: var(--dark); color: var(--on-dark); box-shadow: var(--shadow); }
+.btn--rose  { background: var(--rose); color: var(--dark); }
+.btn--soft  { background: var(--surface); color: var(--ink); box-shadow: var(--shadow-sm); }
+/* Distruttivo ma non urlato: il rosso pieno su una schermata così
+   morbida sarebbe uno strappo, e queste azioni chiedono conferma. */
+.btn--quiet { background: transparent; color: var(--danger); }
+
+@media (hover: hover) {
+  .btn--dark:hover  { background: #2f2a26; }
+  .btn--rose:hover  { background: #DBAEA3; }
+  .btn--soft:hover  { background: var(--surface-2); }
+  .btn--quiet:hover { background: var(--danger-bg); }
+}
+
+.iconbtn {
+  display: inline-grid; place-items: center;
+  width: var(--tap); height: var(--tap);
+  flex: none;
+  border: 0; border-radius: var(--r-pill);
+  background: var(--surface); color: var(--ink);
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+  transition: transform .14s var(--ease), background-color .18s var(--ease);
+}
+.iconbtn:active { transform: scale(.94); }
+.iconbtn svg { width: 21px; height: 21px; }
+.iconbtn--sm { width: 38px; height: 38px; box-shadow: none; background: transparent; }
+.iconbtn--sm svg { width: 19px; height: 19px; }
+.iconbtn--dark { background: var(--dark); color: var(--on-dark); }
+@media (hover: hover) {
+  .iconbtn--sm:hover { background: var(--surface-2); }
+}
+
+.linkbtn {
+  border: 0; background: none; padding: .3rem .1rem;
+  color: var(--rose-deep); font-size: .875rem; font-weight: 700;
+  cursor: pointer;
+}
+.linkbtn--center {
+  display: block; width: 100%;
+  margin-top: .5rem; padding-top: .8rem;
+  border-top: 1px solid var(--line);
+  color: var(--ink-2); font-weight: 600; font-size: .8rem;
+}
+
+/* ============================================================
+   05. SCHERMATA DI ACCESSO
+   ============================================================ */
+/*
+  A schermo bloccato il fondo della pagina è scuro anche lui: se la
+  schermata del PIN è un filo più corta dello schermo (succedeva
+  all'apertura dalla schermata Home, prima che l'altezza fosse
+  corretta) sotto non deve comparire una fascia cipria.
+*/
+html.is-locked, body.is-locked { background: var(--dark); }
+
+.lock {
+  position: absolute; inset: 0; z-index: 300;
+  display: grid; place-items: center;
+  padding: 1.2rem;
+  padding-top: max(1.6rem, var(--safe-top, env(safe-area-inset-top)));
+  padding-bottom: max(1.4rem, var(--safe-bottom, env(safe-area-inset-bottom)));
+  overflow-y: auto;
+  /* Due aloni cipria su quasi nero: caldo, non piatto. */
+  background:
+    radial-gradient(120% 60% at 50% -12%, rgba(229, 189, 179, .26), transparent 62%),
+    radial-gradient(90% 45% at 110% 112%, rgba(185, 121, 106, .20), transparent 60%),
+    var(--dark);
+}
+.lock[hidden] { display: none; }
+
+.lock__box {
+  width: min(330px, 100%);
+  min-height: 100%;
+  display: flex; flex-direction: column; justify-content: center;
+  gap: clamp(1.4rem, 5vh, 2.6rem);
+  text-align: center;
+}
+.lock__head { display: grid; justify-items: center; }
+.lock__mark {
+  display: grid; place-items: center;
+  width: 54px; height: 54px; margin-bottom: 1.1rem;
+  border-radius: 50%;
+  background: rgba(229, 189, 179, .14);
+  box-shadow: inset 0 0 0 1px rgba(229, 189, 179, .28);
+  color: var(--rose);
+}
+.lock__mark svg { width: 26px; height: 26px; stroke-width: 1.6; }
+.lock__date {
+  color: var(--on-dark-soft);
+  font-size: .74rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase;
+}
+.lock__hello {
+  margin-top: .35rem;
+  color: var(--on-dark);
+  font-size: 1.85rem; font-weight: 800; letter-spacing: -.02em;
+}
+.lock__sub { color: var(--on-dark-soft); font-size: .88rem; margin-top: .45rem; }
+/* Demo: il PIN scritto bene in vista sotto il saluto. */
+.lock__demo {
+  display: inline-block; margin-top: .7rem; padding: .35rem .85rem;
+  border-radius: 999px; background: var(--rose); color: var(--dark);
+  font-size: .85rem; font-weight: 600;
+}
+.lock__demo strong { font-weight: 800; letter-spacing: .08em; }
+.lock form { display: grid; gap: 1.1rem; }
+.lock__err { color: #E8A79E; font-size: .85rem; font-weight: 600; margin-top: -.4rem; }
+
+/* Un pallino per cifra. Fino a quattro si vedono anche i posti vuoti,
+   così il minimo richiesto è leggibile a colpo d'occhio; scrivendo si
+   riempiono, e restano pieni anche quando compare un avviso. */
+.pin-dots { display: flex; justify-content: center; align-items: center; gap: 1rem; min-height: 22px; margin-bottom: .4rem; }
+.pin-dot {
+  width: 13px; height: 13px; border-radius: 50%;
+  border: 1.5px solid rgba(255,255,255,.32);
+  transition: background-color .13s var(--ease), transform .13s var(--ease);
+}
+.pin-dot.is-on { background: var(--rose); border-color: var(--rose); transform: scale(1.15); }
+.pin-dots.is-wrong { animation: shake .4s var(--ease); }
+@keyframes shake {
+  10%, 90% { transform: translateX(-2px); }
+  20%, 80% { transform: translateX(4px); }
+  30%, 50%, 70% { transform: translateX(-7px); }
+  40%, 60% { transform: translateX(7px); }
+}
+
+/* Tasti tondi, come il tastierino del telefono: il pollice li
+   riconosce senza guardare. */
+.keypad {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  justify-items: center; gap: .9rem 1.2rem;
+}
+.key {
+  display: grid; place-items: center;
+  width: 74px; height: 74px;
+  border: 0; border-radius: 50%;
+  background: rgba(255,255,255,.07);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.07);
+  color: var(--on-dark);
+  font-size: 1.75rem; font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  /* Due tocchi svelti sullo stesso tasto l'iPhone li prendeva per uno
+     zoom e il secondo andava perso. */
+  touch-action: manipulation;
+  user-select: none; -webkit-user-select: none;
+  transition: background-color .1s var(--ease), transform .1s var(--ease);
+}
+.key:active { background: rgba(255,255,255,.2); transform: scale(.95); }
+.key--soft { background: transparent; box-shadow: none; color: var(--on-dark-soft); font-size: 1rem; font-weight: 700; }
+.key svg { width: 22px; height: 22px; }
+@media (hover: hover) { .key:hover { background: rgba(255,255,255,.13); } }
+
+/* ============================================================
+   06. SHELL, SCHEDE, NAVIGAZIONE
+   ============================================================ */
+.shell {
+  position: relative;
+  display: flex; flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+.shell[hidden] { display: none; }
+
+/* La sola fascia che scorre. Tutto il resto — barra compresa — sta fermo. */
+.content {
+  flex: 1 1 auto;
+  min-height: 0;                 /* senza questo un figlio flex non scorre */
+  overflow-y: auto;
+  overscroll-behavior: contain;  /* niente rimbalzo che trascina la pagina sotto */
+  -webkit-overflow-scrolling: touch;
+  width: 100%;
+  padding: max(1.1rem, var(--safe-top, env(safe-area-inset-top))) var(--pad) calc(var(--navbar-h) + 1.6rem);
+}
+/* La colonna resta stretta ma la barra di scorrimento sta al bordo. */
+.panel { max-width: var(--content); margin-inline: auto; }
+.panel { display: none; }
+.panel.is-active { display: block; animation: fade .2s var(--ease); }
+@keyframes fade { from { opacity: 0; transform: translateY(4px); } }
+
+/*
+  Barra flottante appoggiata al fondo. Il padding superiore trasparente
+  fa spazio alla metà alta del cerchio della Home: così il cerchio sta
+  dentro il riquadro della barra, e la misura che script.js legge per
+  lasciare spazio al contenuto resta giusta.
+*/
+.tabbar {
+  --fab: 58px;                     /* diametro del cerchio */
+  --fab-rise: 29px;                /* quanto sporge sopra la barra */
+  --bar-h: 62px;
+
+  position: absolute; z-index: 95;
+  left: 50%;
+  bottom: max(10px, var(--safe-bottom, env(safe-area-inset-bottom)));
+  transform: translateX(-50%);
+  width: min(var(--content), calc(100% - 1.4rem));
+  display: flex;
+  padding-top: var(--fab-rise);
+  background: none;
+}
+
+/* Lo sfondo bianco con l'incavo. Sta in due strati: quello interno
+   porta la maschera che scava il semicerchio, quello esterno l'ombra —
+   `filter` sul genitore si applica al figlio già ritagliato, così
+   l'ombra segue il profilo dell'incavo invece del rettangolo. */
+.tabbar__bg {
+  position: absolute; inset: var(--fab-rise) 0 0 0;
+  filter: drop-shadow(0 6px 20px rgba(28, 25, 23, .13));
+  pointer-events: none;
+}
+.tabbar__bg-in {
+  position: absolute; inset: 0;
+  background: var(--surface);
+  border-radius: 24px;
+  /* Trasparente entro 33px dal centro alto, opaco da 34px in poi: fuori
+     dal raggio del gradiente vale l'ultimo colore, quindi tutto il resto
+     della barra resta pieno. */
+  -webkit-mask-image: radial-gradient(circle 34px at 50% 0, transparent 0 33px, #000 34px);
+          mask-image: radial-gradient(circle 34px at 50% 0, transparent 0 33px, #000 34px);
+}
+
+.tab {
+  position: relative; z-index: 1;
+  flex: 1 1 0; min-width: 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 3px;
+  min-height: var(--bar-h);
+  padding: .4rem .15rem;
+  border: 0; background: none;
+  font-size: .64rem; font-weight: 600; line-height: 1.15;
+  color: var(--ink-3);
+  cursor: pointer;
+  transition: color .18s var(--ease);
+}
+.tab span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* Le misure stanno anche negli attributi width/height dell'SVG: se il CSS
+   arriva stantìo dalla cache, un SVG senza dimensioni ripiega su 300x150. */
+.tab__ico { width: 22px; height: 22px; flex: none; }
+.tab.is-active { color: var(--ink); }
+.tab.is-active .tab__ico { stroke-width: 2; }
+
+/* La Home: cerchio in rilievo, centrato sul bordo alto della barra.
+   Icona scura su cipria, come gli altri pulsanti d'accento dell'app —
+   il bianco sul rosa chiaro non avrebbe contrasto sufficiente. */
+.tab--home { justify-content: flex-end; padding-bottom: .5rem; }
+.tab__fab {
+  position: absolute;
+  left: 50%; top: 0;
+  transform: translate(-50%, -50%);
+  width: var(--fab); height: var(--fab);
+  display: grid; place-items: center;
+  border-radius: 50%;
+  /* Deciso abbastanza da staccarsi dal fondo cipria: una sfumatura
+     chiara come lo sfondo faceva sparire il cerchio. Icona scura, non
+     bianca — sul rosa il bianco non ha contrasto sufficiente. */
+  background: linear-gradient(145deg, #EFC9BD, #C08B7C);
+  color: var(--ink);
+  box-shadow: 0 8px 18px rgba(160, 102, 88, .42);
+  transition: transform .16s var(--ease), box-shadow .18s var(--ease);
+}
+.tab__fab svg { width: 26px; height: 26px; stroke-width: 1.9; }
+.tab--home:active .tab__fab { transform: translate(-50%, -50%) scale(.93); }
+.tab--home.is-active .tab__fab {
+  box-shadow: 0 10px 22px rgba(160, 102, 88, .5);
+}
+.tab--home.is-active .tab__fab svg { stroke-width: 2.2; }
+
+/* Senza il supporto alle maschere l'incavo non si può scavare: meglio
+   una barra piena e intera che un buco quadrato. */
+@supports not ((-webkit-mask-image: radial-gradient(#000, #000)) or (mask-image: radial-gradient(#000, #000))) {
+  .tabbar__bg-in { -webkit-mask-image: none; mask-image: none; }
+  .tab__fab { box-shadow: 0 0 0 5px var(--surface), 0 8px 18px rgba(185, 121, 106, .38); }
+}
+
+/*
+  Aperta dalla schermata Home (app web). Qui non c'è la barra di Safari
+  sotto, e il margine di sicurezza in basso (34px) è quasi tutto spazio
+  per la lineetta del gesto: sommato allo stacco della barra la teneva
+  a mezzo dito dal fondo. Basta stare appena sopra la lineetta.
+  L'altezza vera dello schermo la mette script.js in --app-h: in questa
+  modalità il 100% dell'iPhone esclude la fascia dell'ora, e la barra
+  si ritrovava ancora più su.
+*/
+.is-standalone .tabbar { bottom: max(12px, calc(var(--safe-bottom, env(safe-area-inset-bottom)) - 10px)); }
+
+/* ============================================================
+   07. HOME
+   ============================================================ */
+.hello {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  gap: 1rem; margin-bottom: 1.3rem;
+}
+.hello__text { min-width: 0; }
+.hello h1 { font-size: 1.5rem; font-weight: 800; letter-spacing: -.015em; }
+.hello p { color: var(--ink-2); font-size: .88rem; margin-top: .15rem; }
+
+/*
+  L'unico blocco ad alto contrasto della schermata. Regge il dato che
+  conta davvero — quanto è entrato — e per questo non ne esiste un
+  secondo nella stessa vista: due blocchi neri si annullerebbero.
+*/
+.statcard {
+  padding: 1.25rem;
+  background: var(--dark);
+  border-radius: var(--r-card);
+  color: var(--on-dark);
+  box-shadow: var(--shadow-dark);
+}
+.statcard__head { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; }
+.statcard__label { color: var(--on-dark-soft); font-size: .8rem; font-weight: 600; }
+.statcard__figure { display: flex; align-items: baseline; gap: .6rem; flex-wrap: wrap; margin-top: .3rem; }
+.statcard__figure strong {
+  font-size: 2rem; font-weight: 800; letter-spacing: -.02em;
+  font-variant-numeric: tabular-nums;
+}
+.delta {
+  padding: .15rem .5rem;
+  background: rgba(255,255,255,.12); color: #A8D8BE;
+  border-radius: var(--r-pill);
+  font-size: .74rem; font-weight: 700;
+}
+.delta.is-down { color: #E8AEA6; }
+.statcard__badge {
+  display: grid; place-items: center;
+  width: 44px; height: 44px; flex: none;
+  border-radius: 14px;
+  background: var(--rose); color: var(--dark);
+}
+.statcard__badge svg { width: 21px; height: 21px; stroke-width: 2; }
+
+.statcard__grid {
+  display: grid; grid-template-columns: repeat(2, 1fr); gap: .85rem .6rem;
+  margin-top: 1.1rem; padding: .9rem .85rem;
+  background: var(--dark-2); border-radius: var(--r-md);
+}
+.statcard__grid > div { min-width: 0; }
+.statcard__grid span { display: block; color: var(--on-dark-soft); font-size: .72rem; font-weight: 600; }
+.statcard__grid strong {
+  display: block; margin-top: .1rem;
+  font-size: 1.05rem; font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+/* Due colonne e non tre: su 390px tre colonne lasciano ~90px l'una e un
+   netto con i centesimi ("+2.801,60 €") veniva tagliato a metà cifra.
+   Su due righe da due ogni numero sta per intero, alla sua misura. */
+
+/* ============================================================
+   08. RIGHE DI ELENCO
+   ------------------------------------------------------------
+   Un solo componente per appuntamenti, clienti e spese: stesse
+   misure, stessi allineamenti, la freccia sempre nello stesso
+   punto. Le azioni non stanno qui — stanno nel pannello che si
+   apre al tocco.
+   ============================================================ */
+.rows { display: grid; gap: .5rem; }
+/* Intestazioni dentro un elenco: il mese fa da titolo con la sua riga
+   di separazione, il giorno resta un'etichetta piccola sopra le righe
+   che gli appartengono. */
+.grouphead {
+  margin: .45rem 0 -.1rem;
+  font-size: .72rem; font-weight: 700; letter-spacing: .08em;
+  text-transform: uppercase; color: var(--ink-3);
+}
+.grouphead--month {
+  display: flex; align-items: baseline; justify-content: space-between; gap: .8rem;
+  margin: 1.1rem 0 .2rem;
+  padding-bottom: .4rem;
+  border-bottom: 1px solid var(--line);
+  font-size: 1rem; font-weight: 700; letter-spacing: -.01em;
+  text-transform: none; color: var(--ink);
+}
+/* Il totale del mese sta accanto al nome del mese: la somma delle
+   righe che seguono, senza doverle sommare a occhio. */
+.grouphead__tot { font-size: .8rem; font-weight: 700; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+.rows > .grouphead:first-child { margin-top: 0; }
+
+/* Un pulsante a piena larghezza subito dopo un elenco si appiccicherebbe
+   all'ultima riga e sembrerebbe farne parte. */
+.rows + .btn--block { margin-top: .9rem; }
+
+.row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: .9rem;
+  width: 100%;
+  min-height: 64px;
+  padding: .75rem .9rem;
+  border: 0; border-radius: var(--r-md);
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+  text-align: left; cursor: pointer;
+  transition: transform .14s var(--ease), background-color .18s var(--ease);
+}
+.row:active { transform: scale(.99); }
+@media (hover: hover) { .row:hover { background: var(--surface-2); } }
+
+/* Colonna dell'ora: cifre allineate, così l'occhio scorre la giornata.
+   Non si stringe e non va a capo: «→ 10:30» spezzato in due righe
+   sballerebbe l'altezza di una riga sì e una no. */
+.row__time {
+  display: grid; justify-items: start; gap: 1px;
+  min-width: 3.4rem; flex: none;
+}
+.row__time b { font-size: 1rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+.row__time span {
+  font-size: .7rem; color: var(--ink-3); font-weight: 600;
+  white-space: nowrap; font-variant-numeric: tabular-nums;
+}
+
+/* Colonna della data (Conti, storico cliente): un foglietto di
+   calendario bianco col bordo cipria, giorno grande e mese sotto in
+   nero, centrati in un quadrato fisso. Così "5" e "28" occupano lo stesso spazio e le righe restano
+   incolonnate. */
+.row__date {
+  display: grid; place-items: center; align-content: center; gap: 2px;
+  width: 3rem; height: 3rem; flex: none;
+  border: 1.5px solid var(--rose);
+  border-radius: var(--r-sm);
+  background: #fff;
+  line-height: 1;
+}
+.row__date b {
+  font-size: 1.15rem; font-weight: 800; color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.row__date span {
+  font-size: .6rem; font-weight: 700; color: var(--ink);
+  text-transform: uppercase; letter-spacing: .05em; white-space: nowrap;
+}
+
+.row__main { min-width: 0; }
+.row__title {
+  display: block;
+  font-size: .95rem; font-weight: 700;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.row__sub {
+  display: block; margin-top: .1rem;
+  font-size: .8rem; color: var(--ink-2);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.row__end { display: flex; align-items: center; gap: .55rem; flex: none; }
+.row__amount { font-size: .95rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+
+/* Pallino di stato: l'informazione arriva prima di leggere. */
+.dot { width: 9px; height: 9px; border-radius: 50%; flex: none; display: inline-block; }
+.dot--wait { background: var(--st-todo); }
+.dot--done { background: var(--st-done); }
+.dot--in  { background: var(--series-in); }
+.dot--out { background: var(--series-out); }
+
+/* Iniziali della cliente al posto della foto. */
+.avatar {
+  display: grid; place-items: center;
+  width: 44px; height: 44px; flex: none;
+  border-radius: var(--r-pill);
+  background: var(--rose-soft); color: var(--rose-deep);
+  font-size: .9rem; font-weight: 700;
+}
+
+/* Variante senza rilievo, per gli elenchi dentro i pannelli. */
+.rows--flat .row { box-shadow: none; background: var(--surface-2); cursor: default; }
+.rows--flat .row:active { transform: none; }
+/* …tranne quando la riga si apre: lo storico della cliente. */
+.rows--flat button.row { cursor: pointer; }
+.rows--flat button.row:active { transform: scale(.99); }
+
+/* ============================================================
+   09. AGENDA
+   ============================================================ */
+
+.screenhead {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 1rem; margin-bottom: 1.2rem;
+}
+.screenhead h1 { font-size: 1.75rem; font-weight: 800; letter-spacing: -.02em; }
+.screenhead__tools { display: flex; gap: .4rem; flex: none; }
+
+.calcard {
+  padding: 1rem .8rem .7rem;
+  background: var(--surface);
+  border-radius: var(--r-card);
+  box-shadow: var(--shadow-sm);
+}
+.calnav { display: flex; align-items: center; justify-content: space-between; gap: .5rem; }
+.calnav strong { font-size: 1rem; font-weight: 700; text-transform: capitalize; }
+
+/* Sette colonne uguali, senza spazi: le celle si toccano e le righe
+   che le dividono sono quelle del calendario, non bordi di ogni cella.
+   L'intestazione dei giorni usa la stessa griglia, così le lettere
+   cadono esattamente sopra la loro colonna. */
+.caldow, .calgrid {
+  display: grid; grid-template-columns: repeat(7, 1fr); gap: 0;
+}
+.caldow {
+  margin: .9rem 0 .4rem;
+  font-size: .68rem; font-weight: 700; letter-spacing: .02em;
+  color: var(--ink-3); text-align: center;
+}
+.calgrid { border-radius: var(--r-sm); overflow: hidden; }
+
+/*
+  Una cella = un giorno. Le linee stanno solo a destra e in basso: così
+  fra due celle vicine ne resta una sola, e il bordo del riquadro chiude
+  gli ultimi due lati. Con un bordo per cella si vedrebbe doppio.
+*/
+.day {
+  position: relative;
+  display: grid; align-content: center; justify-items: center; gap: 3px;
+  aspect-ratio: 1; min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: transparent; color: var(--ink);
+  font-size: .9rem; font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  transition: background-color .15s var(--ease);
+}
+/* I giorni dell'altro mese restano leggibili ma spenti. */
+.day--out .day__n { color: var(--ink-3); opacity: .5; }
+.day--out .day__dots { opacity: .4; }
+
+/* Il numero porta il tondo: dentro una griglia attaccata, riempire
+   l'intera cella farebbe un blocco nero grosso e sbilanciato. */
+/* Il numero porta il tondo, non la cella: riempire l'intero quadrato
+   farebbe un blocco grosso e sbilanciato dentro una griglia fitta. */
+.day__n {
+  display: grid; place-items: center;
+  width: 30px; height: 30px;
+  border-radius: 50%;
+  transition: background-color .15s var(--ease), color .15s var(--ease);
+}
+.day--today .day__n {
+  color: var(--rose-deep); font-weight: 800;
+  box-shadow: inset 0 0 0 1.5px var(--rose);
+}
+.day--sel .day__n {
+  background: var(--dark); color: var(--on-dark); font-weight: 700;
+  box-shadow: none;
+}
+.day--sel.day--today .day__n { background: var(--rose-deep); color: #fff; }
+
+/* Giorno di chiusura: numero sbiadito e barrato in diagonale, si
+   distingue dai giorni dell'altro mese anche senza colore. */
+.day--closed .day__n {
+  color: var(--ink-3);
+  background: repeating-linear-gradient(-45deg, transparent 0 4px, var(--line) 4px 5px);
+}
+/* Giornata piena: il numero sta su un tondo cipria pieno. */
+.day--full .day__n { background: var(--rose-soft); color: var(--rose-deep); }
+.day--sel.day--closed .day__n, .day--sel.day--full .day__n { background: var(--dark); color: var(--on-dark); }
+
+.callegend {
+  display: flex; justify-content: center; gap: 1.1rem;
+  margin-top: .4rem;
+  font-size: .72rem; font-weight: 600; color: var(--ink-3);
+}
+.callegend span { display: inline-flex; align-items: center; gap: .35rem; }
+.callegend i { width: 12px; height: 12px; border-radius: 50%; }
+.callegend__full { background: var(--rose-soft); }
+.callegend__closed {
+  background: repeating-linear-gradient(-45deg, transparent 0 3px, var(--ink-3) 3px 4px);
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+
+.day__dots { display: flex; gap: 3px; height: 5px; }
+.day__dot { width: 5px; height: 5px; border-radius: 50%; }
+.day__dot--wait { background: var(--st-todo); }
+.day__dot--done { background: var(--st-done); }
+@media (hover: hover) { .day:not(.day--sel) .day__n:hover { background: var(--rose-soft); } }
+
+/* ============================================================
+   10. CLIENTI
+   ============================================================ */
+.search {
+  display: flex; align-items: center; gap: .6rem;
+  padding: 0 1rem;
+  min-height: var(--tap);
+  background: var(--surface);
+  border-radius: var(--r-pill);
+  box-shadow: var(--shadow-sm);
+  /* Senza questo margine l'elenco tocca il campo di ricerca e i due
+     sembrano un pezzo solo: il filtro deve stare per conto suo, sopra
+     i risultati. Stessa misura del respiro sotto al titolo. */
+  margin-bottom: 1.2rem;
+}
+.search svg { width: 19px; height: 19px; color: var(--ink-3); flex: none; }
+.search input {
+  flex: 1; min-width: 0;
+  border: 0; background: none; padding: .7rem 0;
+  font: inherit;
+  /* 16px esatti: sotto questa misura Safari su iOS ingrandisce la
+     pagina quando il campo prende il fuoco e non torna più indietro. */
+  font-size: 16px;
+  color: var(--ink);
+}
+.search input::placeholder { color: var(--ink-3); }
+.search input:focus { outline: none; }
+.search input::-webkit-search-cancel-button { -webkit-appearance: none; }
+
+/* ============================================================
+   11. CONTI
+   ============================================================ */
+.yearsel { position: relative; display: inline-flex; }
+.yearsel select {
+  appearance: none; -webkit-appearance: none;
+  min-height: var(--tap);
+  padding: .5rem 2.3rem .5rem 1.1rem;
+  border: 0; border-radius: var(--r-pill);
+  background: var(--surface); color: var(--ink);
+  box-shadow: var(--shadow-sm);
+  font: inherit; font-size: 16px; font-weight: 600;
+  cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%238A817C'%3E%3Cpath d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right .7rem center;
+  background-size: 18px;
+}
+.yearsel--wide { display: flex; margin-bottom: .8rem; }
+.yearsel--wide select { width: 100%; }
+
+/* --- Menu a tendina in grafica ---
+   Il <select> vero resta lì, invisibile; si vede il pulsante, con la
+   stessa forma che aveva il menu: campo bianco nei moduli, pillola
+   nell'intestazione dei Conti. */
+.picker-native {
+  position: absolute !important; width: 1px !important; height: 1px !important;
+  opacity: 0; pointer-events: none; overflow: hidden;
+}
+.picker {
+  display: flex; align-items: center;
+  width: 100%; min-height: var(--tap);
+  padding: .7rem 2.4rem .7rem .9rem;
+  border: 0; border-radius: var(--r-sm);
+  background: var(--surface) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%238A817C'%3E%3Cpath d='M7 10l5 5 5-5z'/%3E%3C/svg%3E") no-repeat right .7rem center / 18px;
+  color: var(--ink);
+  box-shadow: var(--shadow-sm);
+  font: inherit; font-size: 16px; font-weight: 600; text-align: left;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: box-shadow .18s var(--ease);
+}
+.picker:active, .picker:focus-visible { outline: none; box-shadow: 0 0 0 2px var(--rose); }
+.field.is-invalid .picker { box-shadow: 0 0 0 2px var(--danger); }
+.yearsel .picker { width: auto; border-radius: var(--r-pill); padding: .5rem 2.3rem .5rem 1.1rem; }
+.yearsel--wide .picker { width: 100%; }
+/* La tendina: scende sotto al campo, larga quanto lui, e scorre se le
+   voci sono tante. Sta sopra al resto della pagina ma dentro al
+   pannello: scorrendo, resta attaccata al suo campo. */
+.picker-wrap { position: relative; width: 100%; min-width: 0; }
+.yearsel .picker-wrap { width: auto; }
+.yearsel--wide .picker-wrap { width: 100%; }
+.picker-wrap.is-open { z-index: 70; }
+.picker-wrap.is-open .picker { box-shadow: 0 0 0 2px var(--rose); background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%238A817C'%3E%3Cpath d='M7 14l5-5 5 5z'/%3E%3C/svg%3E"); }
+.dropdown {
+  position: absolute; z-index: 70;
+  top: calc(100% + 6px); left: 0; right: 0;
+  display: grid; gap: 2px;
+  max-height: 288px; overflow-y: auto; overscroll-behavior: contain;
+  padding: 5px;
+  background: var(--surface);
+  border-radius: var(--r-md);
+  box-shadow: 0 14px 34px rgba(28, 25, 23, .16), 0 0 0 1px var(--line);
+  animation: tendina .16s var(--ease);
+}
+@keyframes tendina { from { opacity: 0; transform: translateY(-6px); } }
+/* L'anno in Conti è una pillola stretta, in alto a destra: la tendina
+   si allinea al suo bordo destro e si allarga quanto serve. */
+.yearsel:not(.yearsel--wide) .dropdown { left: auto; right: 0; min-width: 100%; width: max-content; }
+.picker__group {
+  margin: .5rem .55rem .2rem;
+  font-size: .68rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3);
+}
+.picker__group:first-child { margin-top: .25rem; }
+.picker__opt {
+  display: flex; align-items: center; justify-content: space-between; gap: .8rem;
+  width: 100%; min-height: 46px;
+  padding: .5rem .7rem;
+  border: 0; border-radius: var(--r-sm);
+  background: transparent; color: var(--ink);
+  font: inherit; font-size: 16px; font-weight: 600; text-align: left;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.picker__opt:active { background: var(--surface-2); }
+.picker__opt.is-sel { background: var(--rose-soft); color: var(--ink); font-weight: 700; }
+.picker__opt.is-sel .picker__check { color: var(--rose-deep); }
+
+/* Calendario a tendina: le stesse caselle dell'Agenda, in piccolo. */
+/* Il campo data occupa mezza riga: il calendario no, sette colonne
+   hanno bisogno di tutta la larghezza del modulo. Parte dal bordo
+   sinistro del campo (che nei moduli è il primo della riga). */
+.calpop {
+  display: block; padding: .7rem .6rem .4rem; max-height: none; overflow: visible;
+  right: auto; width: min(22rem, calc(100vw - 2 * var(--pad)));
+}
+.calpop__nav { margin-bottom: .35rem; }
+.calpop .day { min-height: 40px; }
+.calpop .day:disabled { cursor: default; opacity: .3; }
+.calpop .linkbtn--center { margin-top: .3rem; }
+
+/* Suggerimenti sotto "Cosa hai comprato": pillole da toccare. */
+.chips { display: flex; flex-wrap: wrap; gap: .4rem; }
+.chips:empty { display: none; }
+.chip {
+  min-height: 34px; padding: .3rem .8rem;
+  border: 1px solid #E4D6CF; border-radius: var(--r-pill);
+  background: var(--surface); color: var(--ink-2);
+  font: inherit; font-size: .82rem; font-weight: 600;
+  cursor: pointer; touch-action: manipulation;
+}
+.chip:active { background: var(--rose-soft); color: var(--ink); }.chips__manage { justify-self: start; font-size: .8rem; }
+
+/* Negozi: un campo per nome, col cestino accanto. */
+.negozi { display: grid; gap: .45rem; margin-top: .2rem; }
+.negozio {
+  display: flex; align-items: center; gap: .6rem;
+  padding: .45rem .55rem .45rem .9rem;
+  background: var(--surface); border-radius: var(--r-md);
+  box-shadow: var(--shadow-sm);
+}
+.negozio input {
+  flex: 1; min-width: 0; min-height: 40px; padding: .3rem .5rem; margin-left: -.5rem;
+  border: 0; border-radius: var(--r-sm);
+  background: transparent; color: var(--ink);
+  font: inherit; font-size: 16px; font-weight: 600;
+}
+.negozio input:focus { outline: none; background: var(--surface-2); box-shadow: 0 0 0 2px var(--rose); }
+.picker__check { width: 20px; height: 20px; flex: none; stroke-width: 2.2; }
+
+.statcard__note { color: var(--on-dark-soft); font-size: .75rem; margin-top: .1rem; }
+.statcard__figure strong.neg { color: #E8AEA6; }
+
+/*
+  Guadagni e spese: due riquadri affiancati, ognuno col suo colore e la
+  sua freccia (su = entra, giù = esce), così non si confondono neanche
+  a colpo d'occhio. Sono pulsanti: toccandoli si apre l'elenco.
+*/
+.moneygrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .6rem; margin-top: .8rem; }
+.moneycard {
+  --c: var(--in); --c-bg: var(--in-bg);
+  display: grid; justify-items: start; gap: .15rem;
+  min-width: 0;
+  padding: 1rem .95rem .85rem;
+  border: 0; border-radius: var(--r-card);
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+  border-top: 4px solid var(--c);
+  text-align: left; cursor: pointer;
+  transition: transform .14s var(--ease), background-color .18s var(--ease);
+}
+.moneycard--out { --c: var(--out); --c-bg: var(--out-bg); }
+.moneycard:active { transform: scale(.98); }
+@media (hover: hover) { .moneycard:hover { background: var(--surface-2); } }
+.moneycard__ico {
+  display: grid; place-items: center;
+  width: 34px; height: 34px; margin-bottom: .35rem;
+  border-radius: 11px;
+  background: var(--c-bg); color: var(--c);
+}
+.moneycard__ico svg { width: 18px; height: 18px; stroke-width: 2.2; }
+.moneycard__label { font-size: .8rem; font-weight: 700; color: var(--ink-2); }
+.moneycard__figure {
+  max-width: 100%;
+  font-size: 1.3rem; font-weight: 800; letter-spacing: -.02em;
+  font-variant-numeric: tabular-nums; color: var(--c);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.moneycard__sub { font-size: .72rem; color: var(--ink-3); line-height: 1.35; }
+.moneycard__cta {
+  display: inline-flex; align-items: center; gap: .15rem;
+  margin-top: .55rem;
+  font-size: .78rem; font-weight: 700; color: var(--c);
+}
+.moneycard__cta svg { width: 14px; height: 14px; stroke-width: 2.2; }
+@media (max-width: 359px) { .moneygrid { grid-template-columns: 1fr; } }
+
+/* In cima agli elenchi: il totale di quello che si sta guardando. */
+.listtotal {
+  --c: var(--in); --c-bg: var(--in-bg);
+  display: grid; gap: .05rem;
+  margin-bottom: .8rem; padding: .9rem 1.05rem;
+  border-radius: var(--r-md);
+  background: var(--c-bg);
+}
+.listtotal--out { --c: var(--out); --c-bg: var(--out-bg); }
+.listtotal span { font-size: .78rem; font-weight: 700; color: var(--c); }
+.listtotal span::first-letter { text-transform: uppercase; }
+.listtotal strong { font-size: 1.6rem; font-weight: 800; letter-spacing: -.02em; font-variant-numeric: tabular-nums; color: var(--c); }
+.listtotal small { font-size: .75rem; color: var(--ink-2); }
+
+.titledot { display: inline-block; width: 10px; height: 10px; margin-right: .5rem; border-radius: 50%; vertical-align: .12em; }
+.titledot--in  { background: var(--in); }
+.titledot--out { background: var(--out); }
+
+.row__amount--in  { color: var(--in); }
+.row__amount--out { color: var(--out); }
+/* Un'etichetta piccola che dice da dove viene il guadagno. */
+.tag {
+  display: inline-block; margin-right: .3rem; padding: 0 .4rem;
+  border-radius: var(--r-pill);
+  background: var(--surface-2); color: var(--ink-2);
+  font-size: .66rem; font-weight: 700; line-height: 1.5;
+  vertical-align: .08em;
+}
+.tag--agenda { background: var(--in-bg); color: var(--in); }
+
+/* Scuro per i guadagni, cipria pieno con testo scuro per le spese:
+   il bianco sul cipria non avrebbe contrasto sufficiente. */
+.btn--in  { background: var(--dark); color: var(--on-dark); box-shadow: var(--shadow); }
+.btn--out { background: var(--rose); color: var(--dark); }
+@media (hover: hover) {
+  .btn--in:hover  { background: #2f2a26; }
+  .btn--out:hover { background: #DBAEA3; }
+}
+
+/* La scelta dopo il +: due pulsanti grandi, uno per cosa. */
+.addchoice { display: grid; gap: .6rem; }
+.addchoice .btn { justify-content: flex-start; gap: .8rem; text-align: left; }
+.addchoice__ico {
+  display: grid; place-items: center;
+  width: 30px; height: 30px; flex: none;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, .16);
+}
+.btn--out .addchoice__ico { background: rgba(28, 25, 23, .08); }
+.addchoice__ico svg { width: 17px; height: 17px; stroke-width: 2.2; }
+
+.listhint { margin-top: .9rem; }
+/* Il pulsante per aggiungere resta in fondo al pannello anche con un
+   elenco lungo: non si deve scorrere tutto l'anno per trovarlo. */
+.sheet__foot--sticky {
+  position: sticky; bottom: 0;
+  margin: 1rem calc(var(--pad) * -1) 0;
+  padding: .8rem var(--pad) 0;
+  background: linear-gradient(to bottom, transparent, var(--bg) .8rem);
+}
+
+.chartcard { padding: 1.2rem 1rem .9rem; }
+/* Il riquadro vuoto: il messaggio prende il posto del grafico, senza
+   scala e senza la rientranza a sinistra che le serve. */
+.chart:has(.chart__empty) { padding-left: 0; }
+.chart__empty {
+  padding: 1.4rem .6rem;
+  text-align: center;
+  color: var(--ink-3); font-size: .85rem; line-height: 1.55;
+}
+.legend { display: flex; gap: .8rem; flex: none; }
+.legend__item { display: inline-flex; align-items: center; gap: .35rem; font-size: .76rem; color: var(--ink-2); }
+
+/*
+  Tre pezzi: la scala fissa a sinistra, la fascia scorrevole con le
+  barre, e sotto l'asse dei mesi. Su telefono dodici mesi in 300px
+  sarebbero illeggibili, quindi le barre scorrono mentre la colonna
+  dei valori resta ferma — altrimenti arrivati a dicembre non si
+  saprebbe più a quanto corrisponde l'altezza.
+*/
+.chart { --plot-h: 170px; --gutter: 3rem; position: relative; padding-left: var(--gutter); }
+.chart__yaxis { position: absolute; left: 0; top: 0; width: var(--gutter); height: var(--plot-h); }
+.chart__yaxis span {
+  position: absolute; right: .45rem; transform: translateY(50%);
+  font-size: .64rem; color: var(--ink-3); white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.chart__scroll { overflow-x: auto; overflow-y: hidden; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+.chart__scroll::-webkit-scrollbar { display: none; }
+/* Almeno ~34px a mese, o le etichette "gen feb mar" si sovrappongono. */
+.chart__inner { min-width: max(100%, 26rem); }
+.chart__plot { position: relative; height: var(--plot-h); border-bottom: 1px solid var(--line); }
+.chart__gridline { position: absolute; left: 0; right: 0; border-top: 1px dashed var(--line); }
+.chart__bars {
+  position: relative; z-index: 1;
+  display: grid; grid-auto-flow: column; grid-auto-columns: 1fr;
+  gap: .3rem; height: 100%; align-items: end;
+}
+.chart__group { position: relative; display: flex; align-items: flex-end; justify-content: center; gap: 3px; height: 100%; }
+.chart__bar { width: 40%; max-width: 13px; min-height: 2px; border-radius: 4px 4px 0 0; }
+.chart__bar--in  { background: var(--series-in); }
+.chart__bar--out { background: var(--series-out); }
+.chart__axis {
+  display: grid; grid-auto-flow: column; grid-auto-columns: 1fr;
+  gap: .3rem; margin-top: .45rem;
+  font-size: .64rem; color: var(--ink-3); text-align: center;
+}
+.chart__axis span.is-now { color: var(--ink); font-weight: 700; }
+
+/* La tabella dei mesi: i numeri esatti del grafico, sempre in vista.
+   Il padding stretto ai lati lascia alle quattro colonne tutta la
+   larghezza che c'è su un telefono. */
+.tablecard { padding: .2rem .7rem .5rem; }
+
+.table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.table { width: 100%; border-collapse: collapse; font-size: .82rem; }
+.table th, .table td { padding: .5rem .45rem; text-align: right; border-bottom: 1px solid var(--line); }
+.table th:first-child, .table td:first-child { text-align: left; }
+.table thead th {
+  font-size: .66rem; font-weight: 700; letter-spacing: .06em;
+  text-transform: uppercase; color: var(--ink-3);
+}
+.table tfoot td { font-weight: 700; border-bottom: 0; border-top: 1.5px solid var(--ink-3); }
+.table .num { font-variant-numeric: tabular-nums; }
+.table .neg { color: var(--danger); }
+.table .is-now td { background: var(--rose-soft); }
+
+/* ============================================================
+   12. IMPOSTAZIONI
+   ============================================================ */
+/* Menu delle impostazioni: una scheda unica, righe divise da una
+   linea sottile — non cinque schede staccate, che spezzerebbero
+   la lettura di un elenco che è una cosa sola. */
+/* Invito a caricare i dati di esempio: tratteggiato, perché è una
+   proposta e non un comando — e perché quello che mette dentro non
+   è roba vera. */
+.demo {
+  display: grid; gap: .6rem;
+  margin-top: 1.2rem; padding: .9rem;
+  border: 1px dashed var(--rose); border-radius: var(--r-md);
+  background: var(--rose-soft);
+}
+.demo__txt { font-size: .82rem; color: var(--ink); line-height: 1.5; }
+
+.menu {
+  margin-top: 1.2rem;
+  background: var(--surface);
+  border-radius: var(--r-card);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+.menu li + li button { border-top: 1px solid var(--line); }
+.menu button {
+  display: flex; align-items: center; gap: .85rem;
+  width: 100%; min-height: 58px;
+  padding: .7rem 1.05rem;
+  border: 0; background: none;
+  text-align: left; cursor: pointer;
+  transition: background-color .16s var(--ease);
+}
+.menu button:active { background: var(--surface-2); }
+@media (hover: hover) { .menu button:hover { background: var(--surface-2); } }
+.menu__ico { display: grid; place-items: center; width: 22px; height: 22px; flex: none; color: var(--ink-2); }
+.menu__ico svg { width: 20px; height: 20px; }
+.menu__label { flex: 1; font-size: .95rem; font-weight: 600; }
+.menu .is-accent { color: var(--rose-deep); }
+.menu .is-accent .menu__ico { color: var(--rose-deep); }
+
+.panel .fineprint { margin-top: 1.2rem; }
+
+/* ============================================================
+   13. PANNELLI (sheet) E FORM
+   ------------------------------------------------------------
+   Su telefono salgono dal basso quasi a tutto schermo: una cosa
+   sola alla volta. Da tablet in su tornano finestre centrate.
+   ============================================================ */
+.sheet { position: absolute; inset: 0; z-index: 380; display: grid; align-items: end; justify-items: center; }
+.sheet[hidden] { display: none; }
+.sheet__scrim {
+  position: absolute; inset: 0;
+  background: rgba(28, 25, 23, .45);
+  backdrop-filter: blur(2px);
+  animation: fade .2s var(--ease);
+}
+.sheet__panel {
+  position: relative;
+  display: flex; flex-direction: column;
+  width: 100%; max-width: var(--content);
+  max-height: 92dvh;
+  background: var(--bg);
+  border-radius: 26px 26px 0 0;
+  box-shadow: 0 -10px 40px rgba(28,25,23,.2);
+  animation: sheetUp .28s var(--ease);
+}
+@keyframes sheetUp { from { transform: translateY(12%); } }
+@keyframes dialogIn { from { opacity: 0; transform: scale(.97); } }
+
+/* Maniglia: dice che il pannello si chiude tirandolo giù. */
+.sheet__panel::before {
+  content: "";
+  width: 2.3rem; height: 4px; flex: none;
+  margin: .5rem auto -.1rem;
+  background: var(--line); border-radius: 3px;
+}
+
+.sheet__head {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: .8rem; flex: none;
+  padding: .9rem var(--pad) .7rem;
+}
+.sheet__head h2 { font-size: 1.25rem; font-weight: 800; letter-spacing: -.015em; min-width: 0; }
+
+.sheet__body {
+  flex: 1;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  padding: 0 var(--pad) max(1.2rem, var(--safe-bottom, env(safe-area-inset-bottom)));
+}
+.sheet__foot { margin-top: 1.5rem; display: grid; gap: .55rem; }
+.sheet--dialog .sheet__panel { max-width: 400px; }
+
+/* --- Form --- */
+.form { display: grid; gap: .9rem; align-content: start; }
+.form__row { display: grid; grid-template-columns: repeat(2, 1fr); gap: .7rem; }
+/* Indirizzo: la via prende lo spazio, civico e sigla restano stretti. */
+.form__row--addr { grid-template-columns: minmax(0, 1fr) 5.5rem; }
+.form__row--city { grid-template-columns: 5.5rem minmax(0, 1fr) 4.2rem; }
+.fieldlabel--form { margin: .5rem 0 -.3rem; }
+.fieldlabel--form span { text-transform: none; letter-spacing: 0; font-weight: 600; }
+
+.field { display: grid; gap: .35rem; min-width: 0; }
+.field > span,
+.field > label > span {
+  display: block;
+  font-size: .72rem; font-weight: 700; letter-spacing: .06em;
+  text-transform: uppercase; color: var(--ink-3);
+}
+.field input, .field select, .field textarea {
+  width: 100%;
+  min-height: var(--tap);
+  padding: .7rem .9rem;
+  border: 0; border-radius: var(--r-sm);
+  background: var(--surface); color: var(--ink);
+  font: inherit; font-size: 16px; font-weight: 600;
+  box-shadow: var(--shadow-sm);
+  appearance: none; -webkit-appearance: none;
+  transition: box-shadow .18s var(--ease);
+}
+.field select {
+  padding-right: 2.2rem;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%238A817C'%3E%3Cpath d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right .7rem center; background-size: 18px;
+}
+/* I campi data e ora nativi non vanno toccati: aprono le rotelle. */
+.field input[type="date"], .field input[type="time"] { appearance: auto; -webkit-appearance: none; }
+/* Valore fisso al posto di un campo (la data del guadagno di un
+   appuntamento): stesso aspetto dei campi, ma non si tocca. Un campo
+   data disattivato, su iPhone, si disegnava sbiadito e con un alone. */
+.fieldfixed {
+  display: flex; align-items: center;
+  min-height: var(--tap);
+  padding: .7rem .9rem;
+  border-radius: var(--r-sm);
+  background: var(--surface-2); color: var(--ink-2);
+  font-size: 16px; font-weight: 600;
+}
+.fieldfixed[hidden] { display: none; }
+/* Con la data fissa, il campo data e il suo pulsante col calendario spariscono. */
+.field.is-fixed input[type="date"], .field.is-fixed .picker-wrap { display: none; }
+/* Safari su iPhone centra da solo data e ora dentro il campo: qui
+   partono da sinistra come tutti gli altri. Serve anche la seconda
+   regola, perché il valore sta in un pezzo interno del campo. */
+.field input { text-align: left; }
+.field input::-webkit-date-and-time-value { text-align: left; margin: 0; }
+.field input::-webkit-datetime-edit { padding: 0; }
+.field input:focus, .field select:focus, .field textarea:focus {
+  outline: none; box-shadow: 0 0 0 2px var(--rose);
+}
+.field textarea { resize: vertical; min-height: 84px; line-height: 1.5; font-weight: 500; }
+
+/*
+  Suggerimenti sotto il campo del nome. Sono in flusso e non sospesi:
+  dentro un pannello che scorre, un elenco in posizione assoluta resta
+  indietro appena si scorre, e con la tastiera aperta finisce coperto.
+*/
+.suggestwrap { position: relative; }
+.suggestwrap > label { display: block; margin-bottom: .35rem; }
+.suggest {
+  display: grid; gap: 2px;
+  margin-top: .35rem; padding: 4px;
+  background: var(--surface);
+  border-radius: var(--r-md);
+  box-shadow: var(--shadow);
+  max-height: 15rem; overflow-y: auto; overscroll-behavior: contain;
+}
+.suggest button {
+  display: flex; align-items: center; gap: .7rem;
+  width: 100%; min-height: 52px;
+  padding: .45rem .55rem;
+  border: 0; border-radius: var(--r-sm);
+  background: none; text-align: left; cursor: pointer;
+}
+.suggest button:active { background: var(--surface-2); }
+@media (hover: hover) { .suggest button:hover { background: var(--surface-2); } }
+.suggest__txt { min-width: 0; display: grid; }
+.suggest__txt b { font-size: .9rem; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.suggest__txt span { font-size: .78rem; color: var(--ink-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.avatar--sm { width: 34px; height: 34px; font-size: .76rem; }
+
+.hintline {
+  padding: .55rem .8rem;
+  background: var(--conf-bg); color: var(--conf);
+  border-radius: var(--r-sm);
+  font-size: .8rem; font-weight: 600;
+}
+.hintline--quiet { background: var(--surface-2); color: var(--ink-2); font-weight: 500; line-height: 1.5; }
+
+/*
+  Riga con interruttore. È l'unico comando che cambia i conti, quindi
+  ha una riga tutta sua invece di stare in mezzo agli altri campi.
+*/
+.switchrow {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 1rem;
+  padding: .8rem .95rem;
+  background: var(--surface); border-radius: var(--r-md);
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+}
+.switchrow--lead { margin-top: .9rem; }
+.switchrow__txt { min-width: 0; display: grid; gap: .1rem; }
+.switchrow__txt b { font-size: .95rem; font-weight: 700; }
+.switchrow__txt span { font-size: .8rem; color: var(--ink-2); }
+
+/*
+  Orari liberi: quadratini da toccare, uno per orario d'inizio, con
+  sotto l'ora di fine. Quello scelto è pieno, come i bottoni scuri.
+*/
+.slotinfo { font-size: .8rem; color: var(--ink-2); line-height: 1.45; }
+.slotinfo:empty { display: none; }
+.slots {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(78px, 1fr));
+  gap: .45rem;
+}
+.slots:empty { display: none; }
+.slot {
+  display: grid; place-items: center; gap: 0;
+  min-height: 54px; padding: .35rem .25rem;
+  border: 0; border-radius: var(--r-sm);
+  background: var(--surface); color: var(--ink);
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: background-color .15s var(--ease), transform .12s var(--ease);
+}
+.slot:active { transform: scale(.96); }
+.slot b { font-size: 1rem; font-weight: 800; font-variant-numeric: tabular-nums; line-height: 1.2; }
+.slot span { font-size: .68rem; font-weight: 600; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+.slot.is-sel { background: var(--dark); color: var(--on-dark); box-shadow: var(--shadow); }
+.slot.is-sel span { color: var(--on-dark-soft); }
+.slotmanual { justify-self: start; font-size: .8rem; }
+.slotmanual__field { margin-top: .2rem; }
+.slotfield.is-invalid .slots { outline: 2px solid var(--danger); outline-offset: 4px; border-radius: var(--r-sm); }
+.slotfield.is-invalid .slotinfo { color: var(--danger); }
+
+/* L'avviso sotto l'orario c'è solo quando c'è da avvisare. */
+#apptHint { background: var(--wait-bg); color: var(--wait); line-height: 1.5; }
+#apptHint.is-clash { background: var(--danger-bg); color: var(--danger); }
+
+/* --- Dettaglio appuntamento --- */
+.bigtime {
+  display: flex; align-items: baseline; gap: .7rem; flex-wrap: wrap;
+  padding: 1rem 1.1rem;
+  background: var(--surface); border-radius: var(--r-md);
+  box-shadow: var(--shadow-sm);
+}
+.bigtime strong { font-size: 1.6rem; font-weight: 800; font-variant-numeric: tabular-nums; letter-spacing: -.02em; }
+.bigtime span { color: var(--ink-2); font-size: .85rem; }
+.bigtime span::first-letter { text-transform: uppercase; }
+.bigtime--in strong { color: var(--in); }
+
+/* --- Stato della sincronizzazione col database -------------
+   Un riquadro sobrio in cima a "Dati e backup". Dice tre cose:
+   come sta messa la copia online, quando è stata aggiornata
+   l'ultima volta, e cosa si può fare adesso. Il colore è solo
+   sulla targhetta: il resto del pannello non deve accendersi
+   ogni volta che manca la rete per due minuti. */
+.sync {
+  margin-top: 1rem;
+  padding: .85rem .95rem;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--surface-2);
+}
+
+.sync__head {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: .6rem; margin-bottom: .4rem;
+}
+
+.sync__title { font-weight: 700; font-size: .9rem; }
+
+.sync__badge {
+  padding: .22rem .6rem;
+  border-radius: var(--r-pill);
+  background: var(--line);
+  color: var(--ink-2);
+  font-size: .72rem; font-weight: 700;
+  letter-spacing: .02em; white-space: nowrap;
+}
+/* Gli stessi tre colori degli stati dell'appuntamento: l'app ne
+   ha già un vocabolario, non ne serve un secondo. */
+.sync__badge.is-ok    { background: var(--conf-bg);   color: var(--conf); }
+.sync__badge.is-warn  { background: var(--wait-bg);   color: var(--wait); }
+.sync__badge.is-error { background: var(--danger-bg); color: var(--danger); }
+
+.sync__msg { font-size: .85rem; color: var(--ink-2); margin: 0 0 .15rem; }
+.sync .fineprint { margin: 0 0 .7rem; }
+.sync .actions__stack .btn { font-size: .82rem; }
+.sync + .fieldlabel { margin-top: 1.6rem; }
+.syncask__note { margin-top: .7rem; }
+
+/* L'avviso in Home: una targhetta sotto la data, non un allarme.
+   Compare solo quando la copia online ha un problema vero. */
+.syncpill {
+  margin-top: .5rem;
+  padding: .3rem .75rem;
+  border: 0; border-radius: var(--r-pill);
+  background: var(--wait-bg); color: var(--wait);
+  font: inherit; font-size: .75rem; font-weight: 700;
+  cursor: pointer;
+}
+.syncpill.is-error { background: var(--danger-bg); color: var(--danger); }
+
+/* --- Da segnare (Home) ---
+   La riga resta quella di sempre; il pulsante "Fatto" le sta accanto
+   e non dentro, che un pulsante in un pulsante non si può. */
+/* Righe da leggere (storico cliente, Conti): non si aprono, e i comandi
+   stanno dentro la riga, a destra, in quadratini col bordo sottile. */
+.row--static { cursor: default; }
+.row--static:active { transform: none; }
+.row--static .row__main .row__amount { display: block; margin-top: .1rem; font-size: .85rem; }
+.row__acts { display: flex; gap: .4rem; }
+.rowact {
+  display: grid; place-items: center;
+  width: 34px; height: 34px; padding: 0;
+  border: 1px solid var(--line); border-radius: 8px;
+  background: transparent; color: var(--ink-2);
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: transform .12s var(--ease), background-color .15s var(--ease), border-color .15s var(--ease);
+}
+.rowact svg { width: 17px; height: 17px; }
+.rowact:active { transform: scale(.92); background: var(--surface-2); }
+.rowact--del { color: var(--danger); }
+.rowact--del:active { background: var(--danger-bg); border-color: var(--danger-bg); }
+/* In "Da segnare" la data ha lunghezze diverse (gio 1 ott, mer 30 set):
+   colonna fissa, così i nomi restano incolonnati. */
+#homePending .row__time { min-width: 5.9rem; }
+/* "Fatto" nella Home: la spunta nel verde dei completati. */
+.rowact--done { color: var(--st-done); }
+.rowact--done svg { stroke-width: 2.3; }
+.rowact--done:active { background: var(--conf-bg); border-color: var(--conf-bg); }
+/* Dentro lo storico le righe hanno il fondo cipria: il bordo si scurisce
+   un poco per restare visibile. */
+.rows--flat .rowact { border-color: #E4D6CF; }
+
+
+/* Il nome scritto corrisponde a una cliente già in anagrafica. */
+.hintline--warn { background: var(--wait-bg); color: var(--wait); line-height: 1.5; }
+.hintline__act {
+  border: 0; background: none; padding: 0;
+  color: inherit; font: inherit; font-weight: 800;
+  text-decoration: underline; text-underline-offset: 2px;
+  cursor: pointer;
+}
+
+/* Le note fisse della cliente nel dettaglio appuntamento: stesso
+   riquadro delle note, un tono più neutro per distinguerle. */
+.notebox--client { background: var(--surface-2); color: var(--ink-2); }
+
+/* Campo da completare: il bordo resta finché non lo si tocca. */
+.field.is-invalid input,
+.field.is-invalid select,
+.field.is-invalid textarea { box-shadow: 0 0 0 2px var(--danger); }
+.field.is-invalid > span,
+.field.is-invalid > label > span { color: var(--danger); }
+
+.deflist {
+  display: grid; margin-top: .7rem;
+  background: var(--surface); border-radius: var(--r-md);
+  box-shadow: var(--shadow-sm); overflow: hidden;
+}
+.deflist li {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 1rem; padding: .7rem 1.05rem;
+  font-size: .875rem;
+}
+.deflist li + li { border-top: 1px solid var(--line); }
+.deflist span { color: var(--ink-2); }
+.deflist b { font-weight: 700; text-align: right; font-variant-numeric: tabular-nums; }
+
+.notebox {
+  margin-top: .7rem; padding: .75rem .9rem;
+  background: var(--rose-soft); color: var(--ink);
+  border-radius: var(--r-sm);
+  font-size: .85rem; line-height: 1.55;
+}
+.warnbox {
+  margin-top: .7rem; padding: .75rem .9rem;
+  background: var(--wait-bg); color: var(--wait);
+  border-radius: var(--r-sm);
+  font-size: .82rem; font-weight: 600; line-height: 1.5;
+}
+
+.actions { display: grid; gap: .55rem; margin-top: 1.2rem; }
+/* Il pulsante del resoconto sta sotto il campo del periodo: senza
+   più aria sembra attaccato alla tendina. */
+.actions .report-go { margin-top: .9rem; }
+/* Due soli comandi: uno sopra l'altro, larghi uguali. */
+.actions__stack { display: grid; gap: .55rem; }
+/* Questi si dividono lo spazio fra quelli davvero visibili: nascosta
+   Mappa, Chiama prende tutta la riga invece di lasciare mezza colonna
+   vuota. */
+.actions__row { display: flex; flex-wrap: wrap; gap: .55rem; }
+.actions__row > .btn { flex: 1 1 8rem; }
+
+.statgrid {
+  display: grid; grid-template-columns: repeat(2, 1fr); gap: .5rem;
+  margin-top: .9rem;
+}
+.statgrid > div {
+  min-width: 0; padding: .8rem .9rem;
+  background: var(--surface); border-radius: var(--r-md);
+  box-shadow: var(--shadow-sm);
+}
+.statgrid span { display: block; font-size: .7rem; font-weight: 700; letter-spacing: .04em;
+                 text-transform: uppercase; color: var(--ink-3); }
+.statgrid strong {
+  display: block; margin-top: .15rem;
+  font-size: 1.15rem; font-weight: 700; font-variant-numeric: tabular-nums;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+/* --- Listino --- */
+.srvlist { display: grid; gap: .5rem; margin-top: 1rem; }
+.srv {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: .5rem .8rem;
+  align-items: center;
+  padding: .8rem .9rem;
+  background: var(--surface); border-radius: var(--r-md);
+  box-shadow: var(--shadow-sm);
+}
+/* Il nome è un campo, ma deve continuare a sembrare un titolo: il
+   fondo compare solo quando lo si sta scrivendo. */
+.srv__name {
+  min-width: 0; width: 100%;
+  min-height: 38px; padding: .3rem .5rem; margin-left: -.5rem;
+  border: 0; border-radius: var(--r-sm);
+  background: transparent; color: var(--ink);
+  font: inherit; font-size: 16px; font-weight: 700;
+}
+.srv__name:focus { outline: none; background: var(--surface-2); box-shadow: 0 0 0 2px var(--rose); }
+.srv__del { grid-column: 1 / -1; justify-self: start; color: var(--danger); font-size: .8rem; }
+.srvadd { margin-top: .6rem; }
+.srv__fields { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 1fr; gap: .5rem; }
+.srv__fields label { display: grid; gap: .2rem; }
+.srv__fields span { font-size: .66rem; font-weight: 700; letter-spacing: .05em;
+                    text-transform: uppercase; color: var(--ink-3); }
+.srv__fields input {
+  min-height: 42px; padding: .45rem .7rem;
+  border: 0; border-radius: var(--r-sm);
+  background: var(--surface-2); color: var(--ink);
+  font: inherit; font-size: 16px; font-weight: 600;
+}
+.srv__fields input:focus { outline: none; box-shadow: 0 0 0 2px var(--rose); }
+.srv.is-off { opacity: .5; }
+
+/* --- Orari di lavoro --- */
+.fieldlabel--first { margin-top: .2rem; }
+.orari { display: grid; gap: .45rem; margin: .8rem 0 0; }
+.orari--first { margin-top: .2rem; }
+/* Un giorno per scheda, una riga per fascia: nome, dalle–alle, interruttore. */
+.orario {
+  display: grid; gap: .45rem;
+  padding: .75rem .9rem .8rem;
+  background: var(--surface); border-radius: var(--r-md);
+  box-shadow: var(--shadow-sm);
+}
+.orario__day { display: flex; align-items: baseline; justify-content: space-between; font-weight: 700; }
+.orario__closed { display: none; font-style: normal; font-size: .75rem; font-weight: 700; color: var(--ink-3); }
+.orario.is-closed .orario__closed { display: inline; }
+.orario.is-closed .orario__day { color: var(--ink-3); }
+
+.turno {
+  display: grid; grid-template-columns: 5.6rem minmax(0, 1fr) auto;
+  align-items: center; gap: .6rem;
+  padding: .15rem 0; border-radius: var(--r-sm);
+}
+.turno__name { font-size: .8rem; font-weight: 600; color: var(--ink-2); }
+.turno__times { display: flex; align-items: center; gap: .35rem; min-width: 0; color: var(--ink-3); }
+.turno__times input {
+  flex: 1; min-width: 0;
+  min-height: 40px; padding: .4rem .5rem;
+  border: 0; border-radius: var(--r-sm);
+  background: var(--surface-2); color: var(--ink);
+  font: inherit; font-size: 16px; font-weight: 600; text-align: center;
+  -webkit-appearance: none; appearance: none;
+}
+.turno__times input:focus { outline: none; box-shadow: 0 0 0 2px var(--rose); }
+/* Fascia spenta: gli orari restano lì, sbiaditi, pronti per riaccenderla. */
+.turno.is-off .turno__times { opacity: .35; }
+.turno.is-off .turno__name { color: var(--ink-3); }
+.turno.is-invalid { box-shadow: 0 0 0 2px var(--danger); }
+
+/* Interruttore: dice "acceso/spento" meglio di una casella di spunta. */
+.switch { position: relative; display: inline-block; width: 46px; height: 28px; flex: none; }
+.switch input { position: absolute; opacity: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; }
+.switch__track {
+  position: absolute; inset: 0;
+  background: var(--line); border-radius: var(--r-pill);
+  transition: background-color .18s var(--ease);
+  pointer-events: none;
+}
+.switch__track::after {
+  content: ""; position: absolute; top: 3px; left: 3px;
+  width: 22px; height: 22px; border-radius: 50%;
+  background: var(--surface); box-shadow: var(--shadow-sm);
+  transition: transform .18s var(--ease);
+}
+.switch input:checked + .switch__track { background: var(--conf); }
+.switch input:checked + .switch__track::after { transform: translateX(18px); }
+.switch input:focus-visible + .switch__track { outline: 2px solid var(--rose-deep); outline-offset: 2px; }
+
+.conflicts { display: grid; gap: .45rem; margin: .9rem 0 0; }
+.conflicts li {
+  padding: .65rem .85rem;
+  background: var(--wait-bg); color: var(--ink);
+  border-radius: var(--r-sm);
+  font-size: .85rem;
+}
+.conflicts b { font-variant-numeric: tabular-nums; }
+
+/* ============================================================
+   14. TOAST
+   ============================================================ */
+.toasts {
+  position: absolute; z-index: 400;
+  left: 50%; transform: translateX(-50%);
+  bottom: calc(var(--navbar-h) + .7rem);
+  display: grid; gap: .5rem;
+  width: min(420px, calc(100vw - 1.6rem));
+  pointer-events: none;
+}
+.toast {
+  padding: .8rem 1rem;
+  border-radius: var(--r-sm);
+  background: var(--dark); color: var(--on-dark);
+  font-size: .85rem; font-weight: 600; line-height: 1.45;
+  box-shadow: var(--shadow-dark);
+  animation: toastIn .22s var(--ease);
+}
+/* Con un pannello aperto in basso stanno i pulsanti che si stanno per
+   toccare: l'avviso scende dall'alto, sotto l'isola del telefono. */
+body.is-sheet .toasts { bottom: auto; top: max(.8rem, calc(var(--safe-top, env(safe-area-inset-top)) + .4rem)); }
+body.is-sheet .toast { animation-name: toastInTop; }
+@keyframes toastInTop { from { opacity: 0; transform: translateY(-10px); } }
+.toast--ok    { background: #2E6D5A; }
+.toast--warn  { background: #9C6C2A; }
+.toast--error { background: #A2483F; }
+.toast.is-out { animation: toastOut .22s var(--ease) forwards; }
+@keyframes toastIn  { from { opacity: 0; transform: translateY(10px); } }
+@keyframes toastOut { to   { opacity: 0; transform: translateY(10px); } }
+
+/* ============================================================
+   15. MEDIA QUERIES
+   ============================================================ */
+/* xs — telefoni piccoli: cambia la densità, non la struttura. */
+@media (max-width: 359px) {
+  .hello h1 { font-size: 1.3rem; }
+  .screenhead h1 { font-size: 1.5rem; }
+  .statcard__figure strong { font-size: 1.7rem; }
+  .statcard { padding: 1.05rem; }
+  .key { width: 62px; height: 62px; font-size: 1.45rem; }
+  .keypad { gap: .6rem .9rem; }
+  .lock__hello { font-size: 1.55rem; }
+  .day { min-height: 38px; font-size: .84rem; }
+  .row { padding: .7rem .75rem; gap: .7rem; }
+  .tab { font-size: .6rem; }
+}
+
+/*
+  md — da 600px. La colonna dell'app resta stretta: è un'app da
+  telefono, allargarla a tutto schermo su tablet darebbe righe
+  lunghissime con l'ora a sinistra e la freccia lontanissima.
+  Cresce solo il respiro intorno, e i pannelli si ricentrano.
+*/
+@media (min-width: 600px) {
+  :root { --pad: 1.4rem; --content: 520px; }
+
+  .content { padding-top: 1.8rem; padding-bottom: 2.4rem; }
+
+
+  /* Pannelli centrati invece che appoggiati al fondo. */
+  .sheet { align-items: center; padding: 1.5rem; }
+  .sheet__panel {
+    max-height: min(88dvh, 780px);
+    border-radius: var(--r-card);
+    animation-name: dialogIn;
+    box-shadow: 0 24px 60px rgba(28,25,23,.24);
+  }
+  .sheet__panel::before { content: none; }
+  .sheet__head { padding-top: 1.2rem; }
+}
+
+/* lg — da 900px: solo più aria intorno alla colonna. */
+@media (min-width: 900px) {
+  .content { padding-top: 2.4rem; }
+  .chart { --plot-h: 200px; }
+}
+
+/* ============================================================
+   16. PREFERENZE UTENTE
+   ============================================================ */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .001ms !important;
+  }
+}
+
+/* Contrasto forzato: le due serie non possono restare distinte
+   solo per colore, e i blocchi devono conservare un bordo. */
+@media (forced-colors: active) {
+  .chart__bar--out { background: Highlight; }
+  .chart__bar--in  { background: CanvasText; }
+  .row, .card, .statcard, .menu, .key, .day--sel { border: 1px solid CanvasText; }
+  .pin-dot.is-on { background: Highlight; }
+}
+
+@media print {
+  .tabbar, .toasts, .sheet, .lock { display: none !important; }
+  body { background: #fff; }
+  .panel { display: block !important; }
+}
+
+/* ============================================================
+   17. RESOCONTO
+   ------------------------------------------------------------
+   Un foglio A4 da tenere fra i documenti. A schermo è
+   un'anteprima che scorre sopra l'app; in stampa resta solo il
+   foglio. Stessa tavolozza dell'app, ma il colore non porta mai
+   da solo un'informazione: le cifre ci sono sempre, e il netto
+   ha il segno scritto.
+   ============================================================ */
+.report {
+  position: fixed; inset: 0; z-index: 450;
+  overflow-y: auto; -webkit-overflow-scrolling: touch;
+  background: var(--bg);
+  padding: 0 0 calc(2rem + var(--safe-bottom, env(safe-area-inset-bottom)));
+}
+.report[hidden] { display: none; }
+.report__bar {
+  position: sticky; top: 0; z-index: 1;
+  display: flex; justify-content: space-between; gap: .6rem;
+  padding: calc(.7rem + var(--safe-top, env(safe-area-inset-top))) 16px .7rem;
+  background: color-mix(in srgb, var(--bg) 88%, transparent);
+  -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+}
+.report__page {
+  --rp-ink: #1C1917; --rp-ink-2: #6F6660; --rp-line: #EDE3DE;
+  max-width: 210mm; margin: .4rem 16px 0;
+  background: #fff; color: var(--rp-ink);
+  border-radius: 14px; box-shadow: 0 1px 2px rgba(28,25,23,.06), 0 12px 32px rgba(28,25,23,.08);
+  padding: 22px 18px 26px;
+  font-size: 12.5px; line-height: 1.45;
+}
+@media (min-width: 600px) {
+  .report__page { margin: .6rem auto 0; padding: 14mm 14mm 16mm; }
+}
+
+.rp-head {
+  display: flex; justify-content: space-between; align-items: flex-end; gap: 1rem;
+  padding-bottom: 14px; border-bottom: 2px solid var(--rp-ink);
+}
+.rp-kicker {
+  font-size: 10.5px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase;
+  color: var(--rose-deep); margin: 0 0 2px;
+}
+.rp-title { font-size: 26px; font-weight: 800; letter-spacing: -.02em; line-height: 1.1; margin: 0; }
+.rp-meta { display: grid; text-align: right; gap: 1px; font-size: 11px; color: var(--rp-ink-2); }
+.rp-meta strong { font-size: 13px; color: var(--rp-ink); }
+
+.rp-kpi { display: grid; gap: 10px; margin: 16px 0 6px; }
+.rp-kpi__main {
+  display: grid; gap: 2px; padding: 14px 16px; border-radius: 12px;
+  background: var(--dark); color: #fff;
+}
+.rp-kpi__main span { font-size: 11px; font-weight: 600; color: var(--on-dark-soft); text-transform: uppercase; letter-spacing: .08em; }
+.rp-kpi__main b { font-size: 28px; font-weight: 800; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+.rp-kpi__main small { font-size: 11px; color: var(--on-dark-soft); }
+.rp-kpi__grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.rp-kpi__grid > div {
+  display: grid; gap: 2px; padding: 10px 12px; border-radius: 10px;
+  background: var(--surface-2); border: 1px solid var(--rp-line);
+}
+.rp-kpi__grid span { font-size: 10.5px; font-weight: 600; color: var(--rp-ink-2); }
+.rp-kpi__grid b { font-size: 17px; font-weight: 800; font-variant-numeric: tabular-nums; }
+@media (min-width: 600px) {
+  .rp-kpi { grid-template-columns: 1.1fr 2fr; }
+}
+
+.rp-sec { margin-top: 18px; break-inside: avoid-page; }
+.rp-sec h2 {
+  font-size: 12px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase;
+  margin: 0 0 8px; padding-bottom: 6px; border-bottom: 1px solid var(--rp-line);
+}
+.rp-sec__head { display: flex; justify-content: space-between; align-items: baseline; gap: .5rem; border-bottom: 1px solid var(--rp-line); margin-bottom: 8px; }
+.rp-sec__head h2 { border: 0; margin: 0; }
+.rp-cols { display: grid; gap: 0 22px; }
+@media (min-width: 600px) { .rp-cols { grid-template-columns: 1fr 1fr; } }
+
+.rp-table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+.rp-table th {
+  text-align: left; font-size: 10px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+  color: var(--rp-ink-2); padding: 0 6px 5px 0;
+}
+.rp-table td { padding: 6px 6px 6px 0; border-top: 1px solid var(--rp-line); vertical-align: top; }
+.rp-table tr { break-inside: avoid; }
+.rp-table .num { text-align: right; white-space: nowrap; padding-right: 0; padding-left: 6px; }
+.rp-table .neg { color: var(--danger); }
+.rp-table tfoot td { border-top: 1.5px solid var(--rp-ink); font-weight: 800; padding-top: 7px; }
+.rp-table--list td { font-size: 11.5px; }
+.rp-when { white-space: nowrap; }
+.rp-when span, .rp-sub { color: var(--rp-ink-2); }
+.rp-sub { display: block; font-size: 10.5px; }
+.rp-name { display: block; font-weight: 600; }
+.rp-meter { display: block; height: 4px; margin-top: 4px; border-radius: 2px; background: var(--rose-soft); overflow: hidden; }
+.rp-meter i { display: block; height: 100%; background: var(--rose-deep); border-radius: 2px; }
+.rp-empty { color: var(--rp-ink-2); font-style: italic; margin: 4px 0 0; }
+
+.rp-chart { display: block; width: 100%; height: auto; stroke: none; }
+.rp-chart text, .rp-chart rect { stroke: none; }
+.rp-grid { stroke: var(--rp-line); stroke-width: 1; }
+.rp-axis { font: 600 9px Manrope, system-ui, sans-serif; fill: var(--rp-ink-2); }
+.rp-bar-in  { fill: var(--series-in); }
+.rp-bar-out { fill: var(--series-out); }
+.rp-legend { display: flex; align-items: center; gap: 6px; font-size: 10.5px; color: var(--rp-ink-2); margin: 0 0 6px; }
+.rp-legend i { width: 9px; height: 9px; border-radius: 2px; display: inline-block; }
+.rp-dot-in  { background: var(--series-in); }
+.rp-dot-out { background: var(--series-out); margin-left: 6px; }
+
+.rp-foot {
+  margin-top: 20px; padding-top: 10px; border-top: 1px solid var(--rp-line);
+  font-size: 10.5px; color: var(--rp-ink-2);
+}
+.rp-foot p { margin: 0 0 3px; }
+
+/* In stampa: solo il foglio, a tutta pagina, coi colori veri. */
+@page { size: A4; margin: 12mm; }
+@media print {
+  body.is-report > *:not(.report) { display: none !important; }
+  body.is-report { background: #fff !important; overflow: visible !important; height: auto !important; }
+  body.is-report .report { position: static; overflow: visible; padding: 0; background: #fff; }
+  body.is-report .report__bar { display: none; }
+  body.is-report .report__page {
+    max-width: none; margin: 0; padding: 0; border-radius: 0; box-shadow: none;
+    font-size: 10.5pt;
+  }
+  body.is-report .rp-kpi { grid-template-columns: 1.1fr 2fr; }
+  body.is-report .rp-cols { grid-template-columns: 1fr 1fr; }
+  body.is-report .rp-kpi__main, body.is-report .rp-kpi__grid > div, body.is-report .rp-meter,
+  body.is-report .rp-meter i, body.is-report .rp-legend i {
+    -webkit-print-color-adjust: exact; print-color-adjust: exact;
+  }
+  body.is-report .rp-table thead { display: table-header-group; }
+}

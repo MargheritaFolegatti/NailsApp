@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <script>
+    /* Sul telefono vero la demo non sta dentro un altro telefono: si apre
+       direttamente l'app, a tutto schermo, come la usa chi lavora. */
+    if (window.matchMedia && matchMedia('(max-width: 560px)').matches) {
+      location.replace('app.html' + location.hash);
+    }
+  </script>
+  <title>NailsApp — demo interattiva</title>
+  <meta name="description" content="NailsApp: il gestionale di una nail artist, con agenda, clienti, listino, guadagni e spese. Demo interattiva con dati di fantasia.">
+  <meta name="theme-color" content="#F6EFEB">
+  <meta property="og:title" content="NailsApp — demo interattiva">
+  <meta property="og:description" content="Agenda, clienti e conti di una nail artist, in tasca. Prova la demo: il PIN è 1234.">
+  <link rel="icon" type="image/png" href="icons/icon.png">
+  <link rel="apple-touch-icon" href="icons/icon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/page.css">
+</head>
+<body>
+  <main class="stage">
+    <aside class="intro">
+      <div class="brand">
+        <img class="brand__icon" src="icons/icon.png" alt="" width="56" height="56">
+        <span class="brand__name">NailsApp</span>
+      </div>
+      <h1>Agenda, clienti e conti di una nail artist, in tasca.</h1>
+      <p>NailsApp è il gestionale di una nail artist: l’agenda degli appuntamenti con gli orari liberi già calcolati, le schede delle clienti, il listino, i guadagni e le spese con il riepilogo mese per mese.</p>
+      <p>Questa è la demo: grafica e funzioni sono quelle dell’app vera, che salva i dati in un database MySQL tramite PHP. Qui clienti, appuntamenti e conti sono di fantasia e le modifiche restano solo nel tuo browser.</p>
+      <p class="intro__pin">Per entrare il PIN è <strong>1234</strong>.</p>
+    </aside>
+
+    <div class="phone" id="phone">
+      <div class="phone-notch" aria-hidden="true"></div>
+      <div class="statusbar" aria-hidden="true">
+        <span class="time">9:41</span>
+        <span class="icons">
+          <svg viewBox="0 0 18 12" fill="currentColor"><rect x="0" y="8" width="3" height="4" rx="1"/><rect x="5" y="5.5" width="3" height="6.5" rx="1"/><rect x="10" y="3" width="3" height="9" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg>
+          <svg viewBox="0 0 16 12" fill="currentColor"><path d="M8 2.5c2.3 0 4.4.9 6 2.4l1.2-1.3A10.5 10.5 0 0 0 8 .7 10.5 10.5 0 0 0 .8 3.6L2 4.9a8.7 8.7 0 0 1 6-2.4zm0 3.7c1.3 0 2.5.5 3.4 1.3l1.2-1.3A6.8 6.8 0 0 0 8 4.4a6.8 6.8 0 0 0-4.6 1.8l1.2 1.3C5.5 6.7 6.7 6.2 8 6.2zM8 12l2.2-2.4a3.1 3.1 0 0 0-4.4 0z"/></svg>
+          <svg viewBox="0 0 27 12" fill="none" stroke="currentColor"><rect x=".5" y=".5" width="22" height="11" rx="3" opacity=".4"/><rect x="2" y="2" width="19" height="8" rx="1.6" fill="currentColor" stroke="none"/><path d="M24.5 4v4" stroke-width="1.5" stroke-linecap="round" opacity=".5"/></svg>
+        </span>
+      </div>
+
+      <!-- L'app vera, identica, nel suo schermo da telefono. -->
+      <iframe class="phone__screen" id="appFrame" src="app.html" title="NailsApp, demo"></iframe>
+      <div class="home-indicator" aria-hidden="true"></div>
+    </div>
+  </main>
+
+  <script>
+    (function () {
+      var phone = document.getElementById('phone');
+      var frame = document.getElementById('appFrame');
+      var PHONE_H = 898;   // iPhone 17: schermo 874 + cornice 12 + 12
+      var pad = function (n) { return String(n).padStart(2, '0'); };
+
+      /* L'ora vera nella barra di stato. */
+      function updateClock() {
+        var d = new Date();
+        phone.querySelector('.statusbar .time').textContent = d.getHours() + ':' + pad(d.getMinutes());
+      }
+
+      /* Rimpicciolisce il telefono per farlo stare nella finestra, senza
+         cambiarne le misure interne (come in SwapSkills). */
+      function fitPhone() {
+        /* 56 = il margine di .stage sopra e sotto (24 + 24) più un po' d'aria. */
+        phone.style.zoom = Math.min(1, (innerHeight - 56) / PHONE_H).toFixed(3);
+      }
+
+      /* La barra di stato prende il colore della schermata: scura sul PIN,
+         chiara dentro l'app. */
+      function followTheme() {
+        try {
+          var root = frame.contentDocument.documentElement;
+          var sync = function () { phone.classList.toggle('is-dark', root.classList.contains('is-locked')); };
+          new MutationObserver(sync).observe(root, { attributes: true, attributeFilter: ['class'] });
+          sync();
+        } catch (e) { /* pagina non raggiungibile: resta chiara */ }
+      }
+
+      frame.addEventListener('load', followTheme);
+      window.addEventListener('resize', fitPhone);
+      fitPhone();
+      updateClock();
+      setInterval(updateClock, 30000);
+    })();
+  </script>
+</body>
+</html>
